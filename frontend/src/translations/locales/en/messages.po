@@ -1,0 +1,118 @@
+msgid ""
+msgstr ""
+"POT-Creation-Date: 2025-08-12 08:45+0200\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Generator: @lingui/cli\n"
+"Language: en-EN\n"
+"Project-Id-Version: \n"
+"Report-Msgid-Bugs-To: \n"
+"PO-Revision-Date: \n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"Plural-Forms: \n"
+
+#: src/pages/AuthAreas/Athlete/CoachRequests/CoachSearch.jsx:273
+msgid " in {selectedSpecialization}"
+msgstr ""
+
+#: src/pages/AuthAreas/Coach/CoachProfileSettings.jsx:425
+msgid "(Optional)"
+msgstr ""
+
+#. placeholder {0}: responseAssignment.isReviewed ? 'Already Reviewed' : 'Mark as Reviewed'
+#: src/pages/AuthAreas/Questionnaires/CoachModalReview.jsx:141
+msgid "{0}"
+msgstr ""
+
+#: src/pages/AuthAreas/Questionnaires/CoachQuestionnairesInbox.jsx:97
+msgid "{diffDays} days ago"
+msgstr ""
+
+#: src/pages/AuthAreas/Coach/CoachProfileSettings.jsx:437
+msgid "/ month"
+msgstr ""
+
+#: src/error/NotFound.jsx:16
+msgid "404 — Page Not Found"
+msgstr ""
+
+#: src/pages/VerifyUserModal.jsx:140
+msgid "A 6-digit code was sent to"
+msgstr ""
+
+#: src/pages/ReviewModal.jsx:111
+msgid "Above Average"
+msgstr ""
+
+#: src/pages/AuthAreas/Admin/CoachRequest.jsx:119
+#: src/pages/AuthAreas/Coach/CoachNotifications/AthleteRequestCard.jsx:203
+msgid "Accept"
+msgstr ""
+
+#: src/pages/AuthAreas/Admin/CoachRequest.jsx:112
+msgid "Accept Request"
+msgstr ""
+
+#: src/pages/TermsOfServicePage.jsx:27
+msgid "Acceptance of Terms"
+msgstr ""
+
+#: src/pages/AuthAreas/Coach/CoachNotifications/AthleteRequestCard.jsx:38
+#: src/pages/AuthAreas/Coach/CoachNotifications/AthleteRequestCard.jsx:182
+#: src/pages/AuthAreas/Coach/CoachNotifications/AthleteRequests.jsx:131
+msgid "Accepted"
+msgstr ""
+
+#: src/pages/AuthAreas/User/ProfileSettings.jsx:182
+msgid "Account Information"
+msgstr ""
+
+#: src/components/Sidenav.jsx:123
+#: src/components/Sidenav.jsx:126
+#: src/components/Sidenav.jsx:131
+#: src/components/Sidenav.jsx:134
+msgid "Account Settings"
+msgstr ""
+
+#: src/pages/HomePage.jsx:109
+msgid "Achieve Goals"
+msgstr ""
+
+#: src/pages/AuthAreas/Coach/AthleteList.jsx:65
+msgid "Across all athletes"
+msgstr ""
+
+#: src/pages/AuthAreas/Admin/CoachesList.jsx:45
+#: src/pages/AuthAreas/Nutrition/Diet/NutritionDietTab.jsx:278
+msgid "Actions"
+msgstr ""
+
+#: src/pages/AuthAreas/Admin/CoachesList.jsx:26
+#: src/pages/AuthAreas/Questionnaires/ModalPreviewQuestionnaire.jsx:64
+msgid "Active"
+msgstr ""
+
+#: src/pages/AuthAreas/Nutrition/Macros/MacroNutrientConfigForm.jsx:288
+msgid "Activity & Goals"
+msgstr ""
+
+#: src/pages/AuthAreas/Block/BlockFormStructure.jsx:336
+msgid "Actual"
+msgstr ""
+
+#: src/pages/AuthAreas/Coach/CoachProfileSettings.jsx:342
+msgid "Add a certification..."
+msgstr ""
+
+#: src/pages/AuthAreas/Block/BlockFormStructure.jsx:627
+msgid "Add a comment..."
+msgstr ""
+
+#: src/pages/AuthAreas/Coach/AthleteProfile/QuickEditMacrosModal.jsx:175
+#: src/pages/AuthAreas/Nutrition/Macros/MacroNutrientConfigForm.jsx:522
+msgid "Add any notes about the macro targets..."
+msgstr ""
+
+.....

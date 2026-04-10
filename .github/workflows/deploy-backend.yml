@@ -1,0 +1,80 @@
+name: Deploy Backend
+
+on:
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Set up JDK
+      uses: actions/setup-java@v3
+      with:
+        java-version: '17'
+        distribution: 'temurin'
+
+    - name: Build JAR
+      working-directory: ./Liftsync-backend
+      run: mvn -B package -DskipTests
+
+    - name: Setup SSH Key
+      run: |
+        mkdir -p ~/.ssh
+        echo "${{ secrets.VPS_SSH_KEY }}" > ~/.ssh/id_rsa
+        chmod 600 ~/.ssh/id_rsa
+        ssh-keyscan -H ${{ secrets.VPS_IP }} >> ~/.ssh/known_hosts
+
+    - name: Upload JAR to VPS
+      run: |
+        scp -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no \
+          Liftsync-backend/target/*.jar \
+          ${{ secrets.VPS_USER }}@${{ secrets.VPS_IP }}:/var/www/liftsync/backend.jar
+
+    - name: Upload docker-compose.yml to VPS
+      run: |
+        scp -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no \
+          deploy/docker-compose.yml \
+          ${{ secrets.VPS_USER }}@${{ secrets.VPS_IP }}:/var/www/liftsync/docker-compose.yml
+
+    - name: Upload .env.conf to VPS
+      uses: appleboy/ssh-action@v0.1.6
+      with:
+        host: ${{ secrets.VPS_IP }}
+        username: ${{ secrets.VPS_USER }}
+        key: ${{ secrets.VPS_SSH_KEY }}
+        script: |
+
+          echo "SPRING_DATASOURCE_URL=jdbc:mysql://db:3306/liftsync_prod?allowPublicKeyRetrieval=true&useSSL=false" > /var/www/liftsync/.env
+          echo "SPRING_DATASOURCE_USERNAME=ls_prod" >> /var/www/liftsync/.env
+          echo "SPRING_DATASOURCE_PASSWORD=${{ secrets.DB_PASSWORD }}" >> /var/www/liftsync/.env
+          echo "MYSQL_ROOT_PASSWORD=${{ secrets.DB_PASSWORD_ROOT }}" >> /var/www/liftsync/.env
+
+          echo "SPRING_MAIL_USERNAME=noreply@liftsync.es" >> /var/www/liftsync/.env
+          echo "SPRING_MAIL_PASSWORD=${{ secrets.IONOS_NOREPLAY_EMAIL_PASSWORD }}" >> /var/www/liftsync/.env
+          echo "TOKEN_SECRET=${{ secrets.TOKEN_SECRET }}" >> /var/www/liftsync/.env
+
+          echo "GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }}" >> /var/www/liftsync/.env
+          echo "GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}" >> /var/www/liftsync/.env
+
+          echo "MICROSOFT_CLIENT_SECRET=${{ secrets.MICROSOFT_CLIENT_SECRET }}" >> /var/www/liftsync/.env
+          echo "MICROSOFT_CLIENT_ID=${{ secrets.MICROSOFT_CLIENT_ID }}" >> /var/www/liftsync/.env
+
+          echo "AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }}" >> /var/www/liftsync/.env
+          echo "AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}" >> /var/www/liftsync/.env
+          echo "AWS_REGION=${{ secrets.AWS_REGION }}" >> /var/www/liftsync/.env
+          echo "AWS_S3_BUCKET=${{ secrets.AWS_S3_BUCKET }}" >> /var/www/liftsync/.env
+
+    - name: Restart backend using Docker Compose
+      uses: appleboy/ssh-action@v0.1.6
+      with:
+        host: ${{ secrets.VPS_IP }}
+        username: ${{ secrets.VPS_USER }}
+        key: ${{ secrets.VPS_SSH_KEY }}
+        script: |
+          cd /var/www/liftsync
+          docker compose down
+          docker compose up -d --build
