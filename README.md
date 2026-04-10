@@ -493,32 +493,6 @@ public class InternationalizationConfig {
 }
 ```
 
----
-
-## Local Development
-
-Requirements: Docker, Docker Compose, Java 17, Node 18
-
-```bash
-# Clone the showcase repo
-git clone https://github.com/yourusername/liftsync-api-showcase
-
-# Copy environment template
-cp .env.example .env
-# Fill in your own values in .env
-
-# Start all services locally
-docker compose -f docker-compose.dev.yml up -d
-
-# Or use the Makefile shortcuts
-make dev        # Start local environment
-make build      # Build backend JAR
-make logs       # Follow container logs
-make down       # Stop all containers
-```
-
----
-
 ## Production Infrastructure
 
 | Component | Details |
