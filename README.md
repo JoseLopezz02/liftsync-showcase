@@ -8,7 +8,8 @@
 
 ## What is LiftSync?
 
-LiftSync bridges the gap between fitness coaches and their athletes. Coaches manage client onboarding, assign personalised workout routines and nutrition plans, automate weekly check-in questionnaires, and track client progress over time — all from one platform.
+LiftSync bridges the gap between fitness coaches and their athletes, staging all the tools on the same environment. Coaches manage client onboarding, assign personalised workout routines and nutrition plans, automate weekly check-in questionnaires, and track client progress over time — all from one platform. Athlete track daily, weekly or monthly automated questionnaire,
+to give feedback to the coach and be sure his consulting and adjustment are as acurrate as posible; also tracking each workout and having a scheduled diet that assures them reach their goals 
 
 This repository is a **public showcase** of the system architecture, CI/CD pipeline, and key technical implementations. The full source code is private to protect business logic.
 
@@ -72,40 +73,35 @@ This repository is a **public showcase** of the system architecture, CI/CD pipel
 ## Repository Structure
 
 ```
-liftsync-api-showcase/
+liftsync-showcase/
 │
 ├── .github/
 │   └── workflows/
-│       ├── deploy-backend.yml      # Backend CI/CD pipeline
-│       └── deploy-frontend.yml     # Frontend CI/CD pipeline
+│       ├── deploy-backend.yml           # Backend CI/CD
+│       └── deploy-frontend.yml          # Frontend CI/CD
 │
 ├── backend/
-│   ├── src/main/java/es/liftsync/
-│   │   ├── LiftSyncApplication.java
-│   │   ├── config/
-│   │   │   ├── SecurityConfig.java         # Spring Security + OAuth2
-│   │   │   ├── S3Config.java               # AWS S3 client configuration
-│   │   │   └── MessageSourceConfig.java    # i18n configuration
-│   │   ├── controller/
-│   │   │   └── ExampleController.java      # Example REST endpoint
-│   │   └── i18n/
-│   │       └── LocaleConfig.java           # LocaleContextHolder setup
-│   └── pom.xml
+│   ├── src/main/java/com/liftsync/
+│   │   ├── LiftSyncBackendApplication.java
+│   │   └── config/
+│   │       ├── amazon/
+│   │       │   └── S3Config.java        # AWS S3 + presigner
+│   │       ├── websocket/
+│   │       │   ├── AuthHandshakeInterceptor.java  # Auth at handshake
+│   │       │   └── WebSocketConfig.java           # Handler registration
+│   │       ├── InternationalizationConfig.java    # i18n config
+│   │       └── SecurityConfig.java               # CORS + Security
+│   └── .env.example                     # Env variables template
 │
 ├── frontend/
-│   ├── src/
-│   │   ├── i18n/
-│   │   │   ├── config.ts                   # react-i18next setup
-│   │   │   └── locales/
-│   │   │       ├── en/messages.po          # English translations
-│   │   │       └── es/messages.po          # Spanish translations
-│   │   └── components/
-│   │       └── ExampleComponent.jsx        # Example i18n component
-│   └── package.json
+│   └── src/
+│       ├── translations/
+│       │   ├── locales/
+│       │   │   ├── en/messages.po       # English (example)
+│       │   │   └── es/messages.po       # Spanish (example)
+│       │   └── i18n.js                  # Lingui setup
+│       └── main.jsx                     # App entry point
 │
-├── docker-compose.yml              # Production orchestration
-├── docker-compose.dev.yml          # Local development
-├── Makefile                        # Developer shortcuts
 └── README.md
 ```
 
@@ -493,6 +489,8 @@ public class InternationalizationConfig {
 }
 ```
 
+---
+
 ## Production Infrastructure
 
 | Component | Details |
@@ -524,8 +522,7 @@ The full platform is live and accessible at **[www.liftsync.es](https://www.lift
 
 Built and maintained by **José** — backend software engineer based in Mallorca, Spain.
 
-Currently working on the IKEA regional e-commerce platform (Sarton) across 5+ territories.
-Building LiftSync from real domain expertise as a working fitness coach.
+Currently working on the IKEA regional e-commerce platform (Sarton) across 5+ territories, and building LiftSync as a domain-expert side project.
 
 📧 [jjoselopezbt@email.com] · 💼 [linkedin.com/in/jose-lopez-backend] · 🌐 [liftsync.es]
 
