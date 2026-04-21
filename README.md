@@ -259,6 +259,7 @@ public class SecurityConfig {
 ### WebSocket — Real-time Coach-Athlete-Admin Chat
 
 Raw WebSocket implementation (not STOMP) with a custom `AuthHandshakeInterceptor` that authenticates and authorises connections at the handshake level — before the WebSocket connection is established. The connection is rejected entirely if any check fails, meaning unauthenticated or unauthorised users never establish a WebSocket connection.
+Room authentication uses UUID public identifiers rather than sequential database IDs — preventing enumeration attacks while maintaining resource-level access control at the handshake level.
 
 The interceptor validates three things in sequence:
 1. JWT token is present and valid
@@ -277,11 +278,11 @@ public class AuthHandshakeInterceptor implements HandshakeInterceptor {
     private final ChatService chatService;
 
     public AuthHandshakeInterceptor(TokenService tokenService,
-                                     UserService userService,
-                                     ChatService chatService) {
-        this.tokenService = tokenService;
-        this.userService = userService;
+                                    UserService userService,
+                                    ChatService chatService) {
         this.chatService = chatService;
+        this.userService = userService;
+        this.tokenService = tokenService;
     }
 
     @Override
@@ -297,16 +298,15 @@ public class AuthHandshakeInterceptor implements HandshakeInterceptor {
                 .getQueryParams();
 
         String token = params.getFirst("token");
-        String roomIdS = params.getFirst("roomId");
-
-        if (token == null || roomIdS == null) {
+        String roomIds = params.getFirst("roomId");
+        if (token == null || roomIds == null) {
             response.setStatusCode(HttpStatus.UNAUTHORIZED);
             return false;
         }
 
         try {
+
             Long userId = tokenService.verifyAndGetIdFromToken(token);
-            Long roomId = Long.valueOf(roomIdS);
 
             User user = userService.findUserById(userId);
             if (user == null) {
@@ -314,7 +314,11 @@ public class AuthHandshakeInterceptor implements HandshakeInterceptor {
                 return false;
             }
 
-            ChatRoom room = chatService.findRoomById(roomId);
+
+            // Uses UUID public room ID instead of sequential DB ID
+            // to prevent enumeration attacks on the WebSocket endpoint
+            ChatRoom room = chatService.findRoomByPublicId(roomIds);
+
             if (room == null) {
                 response.setStatusCode(HttpStatus.NOT_FOUND);
                 return false;
@@ -325,12 +329,12 @@ public class AuthHandshakeInterceptor implements HandshakeInterceptor {
                 return false;
             }
 
-            // Store in session attributes for use by the WebSocket handler
             attributes.put("userId", userId);
-            attributes.put("roomId", roomId);
+            attributes.put("roomId", room.getId());
+
             return true;
 
-        } catch (JWTVerificationException | NumberFormatException ex) {
+        } catch (JWTVerificationException ex) {
             response.setStatusCode(HttpStatus.UNAUTHORIZED);
             return false;
         } catch (Exception ex) {
@@ -340,10 +344,14 @@ public class AuthHandshakeInterceptor implements HandshakeInterceptor {
     }
 
     @Override
-    public void afterHandshake(ServerHttpRequest request, ServerHttpResponse response,
-                                WebSocketHandler wsHandler, Exception exception) {
-        // No post-handshake processing required
+    public void afterHandshake(
+            ServerHttpRequest request,
+            ServerHttpResponse response,
+            WebSocketHandler wsHandler,
+            Exception exception) {
+        // nothing to do
     }
+
 }
 ```
 
