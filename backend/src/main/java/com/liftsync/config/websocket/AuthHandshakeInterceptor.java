@@ -52,8 +52,8 @@ public class AuthHandshakeInterceptor implements HandshakeInterceptor {
                 .getQueryParams();
 
         String token = params.getFirst("token");
-        String roomIdS = params.getFirst("roomId");
-        if (token == null || roomIdS == null) {
+        String roomId = params.getFirst("roomId");
+        if (token == null || roomIds == null) {
             response.setStatusCode(HttpStatus.UNAUTHORIZED);
             return false;
         }
@@ -61,7 +61,6 @@ public class AuthHandshakeInterceptor implements HandshakeInterceptor {
         try {
 
             Long userId = tokenService.verifyAndGetIdFromToken(token);
-            Long roomId = Long.valueOf(roomIdS);
 
             User user = userService.findUserById(userId);
             if (user == null) {
@@ -69,7 +68,7 @@ public class AuthHandshakeInterceptor implements HandshakeInterceptor {
                 return false;
             }
 
-            ChatRoom room = chatService.findRoomById(roomId);
+            ChatRoom room = chatService.findRoomByPublicId(roomId);
 
             if (room == null) {
                 response.setStatusCode(HttpStatus.NOT_FOUND);
@@ -82,11 +81,11 @@ public class AuthHandshakeInterceptor implements HandshakeInterceptor {
             }
 
             attributes.put("userId", userId);
-            attributes.put("roomId", roomId);
+            attributes.put("roomId", roomId.getId());
 
             return true;
 
-        } catch (JWTVerificationException | NumberFormatException ex) {
+        } catch (JWTVerificationException) {
             response.setStatusCode(HttpStatus.UNAUTHORIZED);
             return false;
         } catch (Exception ex) {
