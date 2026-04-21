@@ -298,8 +298,8 @@ public class AuthHandshakeInterceptor implements HandshakeInterceptor {
                 .getQueryParams();
 
         String token = params.getFirst("token");
-        String roomIds = params.getFirst("roomId");
-        if (token == null || roomIds == null) {
+        String roomId = params.getFirst("roomId");
+        if (token == null || roomId == null) {
             response.setStatusCode(HttpStatus.UNAUTHORIZED);
             return false;
         }
@@ -317,7 +317,7 @@ public class AuthHandshakeInterceptor implements HandshakeInterceptor {
 
             // Uses UUID public room ID instead of sequential DB ID
             // to prevent enumeration attacks on the WebSocket endpoint
-            ChatRoom room = chatService.findRoomByPublicId(roomIds);
+            ChatRoom room = chatService.findRoomByPublicId(roomId);
 
             if (room == null) {
                 response.setStatusCode(HttpStatus.NOT_FOUND);
