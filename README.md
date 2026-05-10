@@ -532,7 +532,7 @@ Built and maintained by **José** — backend software engineer based in Mallorc
 
 Currently working on the IKEA regional e-commerce platform (Sarton) across 5+ territories, and building LiftSync as a domain-expert side project.
 
-📧 [jjoselopezbt@email.com] · 💼 [linkedin.com/in/jose-lopez-backend] · 🌐 [liftsync.es]
+📧 [jjoselopezbt@gmail.com] · 💼 [linkedin.com/in/jose-lopez-backend] · 🌐 [liftsync.es]
 
 ---
 
