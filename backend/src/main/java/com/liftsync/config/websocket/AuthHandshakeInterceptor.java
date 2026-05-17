@@ -53,7 +53,7 @@ public class AuthHandshakeInterceptor implements HandshakeInterceptor {
 
         String token = params.getFirst("token");
         String roomId = params.getFirst("roomId");
-        if (token == null || roomIds == null) {
+        if (token == null || roomId == null) {
             response.setStatusCode(HttpStatus.UNAUTHORIZED);
             return false;
         }
@@ -81,11 +81,11 @@ public class AuthHandshakeInterceptor implements HandshakeInterceptor {
             }
 
             attributes.put("userId", userId);
-            attributes.put("roomId", roomId.getId());
+            attributes.put("roomId", room.getId());
 
             return true;
 
-        } catch (JWTVerificationException) {
+        } catch (JWTVerificationException ex) {
             response.setStatusCode(HttpStatus.UNAUTHORIZED);
             return false;
         } catch (Exception ex) {

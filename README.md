@@ -8,8 +8,8 @@
 
 ## What is LiftSync?
 
-LiftSync bridges the gap between fitness coaches and their athletes, staging all the tools on the same environment. Coaches manage client onboarding, assign personalised workout routines and nutrition plans, automate weekly check-in questionnaires, and track client progress over time — all from one platform. Athlete track daily, weekly or monthly automated questionnaire,
-to give feedback to the coach and be sure his consulting and adjustment are as acurrate as posible; also tracking each workout and having a scheduled diet that assures them reach their goals 
+LiftSync bridges the gap between fitness coaches and their athletes, staging all the tools on the same environment. Coaches manage client onboarding, assign personalized workout routines and nutrition plans, automate weekly check-in questionnaires, and track client progress over time — all from one platform. Athlete track daily, weekly or monthly automated questionnaire,
+to give feedback to the coach and be sure his consulting and adjustment are as acurrate as possible; also tracking each workout and having a scheduled diet that assures them reach their goals 
 
 This repository is a **public showcase** of the system architecture, CI/CD pipeline, and key technical implementations. The full source code is private to protect business logic.
 
@@ -40,14 +40,14 @@ This repository is a **public showcase** of the system architecture, CI/CD pipel
 │                                                         │
 └─────────────────────────────────────────────────────────┘
                           │
-        ┌─────────────────┼──────────────────┐
-        ↓                 ↓                  ↓
-┌──────────────┐  ┌──────────────┐  ┌──────────────────┐
-│    MySQL     │  │   AWS S3     │  │ OAuth2 Providers │
-│  Database    │  │ Photos/Media │  │ Google/Microsoft │
-│              │  │ (avatars +   │  └──────────────────┘
-│              │  │ chat media)  │
-└──────────────┘  └──────────────┘
+        ┌─────────────────┼──────────────────┼─────────────────┐
+        ↓                 ↓                  ↓                 ↓
+┌──────────────┐  ┌──────────────┐  ┌──────────────┐  ┌──────────────────┐
+│    MySQL     │  │   AWS S3     │  │    Redis     │  │ OAuth2 Providers │
+│  Database    │  │ Photos/Media │  │  Caching     │  │ Google/Microsoft │
+│              │  │ (avatars +   │  │  Layer       │  └──────────────────┘
+│              │  │ chat media)  │  │              │
+└──────────────┘  └──────────────┘  └──────────────┘
 ```
 
 ---
@@ -59,6 +59,7 @@ This repository is a **public showcase** of the system architecture, CI/CD pipel
 | Backend | Java 17, Spring Boot 3, Spring Security |
 | Auth | OAuth2 (Google + Microsoft), JWT |
 | Database | MySQL |
+| Caching | Redis (type-safe, transaction-aware, versioned) |
 | Cloud Storage | AWS S3 (user avatars, profile photos, future chat media) |
 | Real-time | WebSocket (coach-athlete-admin chat) |
 | Frontend | React, JavaScript |
@@ -83,9 +84,17 @@ liftsync-showcase/
 ├── backend/
 │   ├── src/main/java/com/liftsync/
 │   │   ├── LiftSyncBackendApplication.java
+│   │   ├── cache/
+│   │   │   ├── CacheEvictor.java        # Transaction-aware eviction
+│   │   │   └── CacheKeyUtils.java       # Composite key generation
 │   │   └── config/
 │   │       ├── amazon/
 │   │       │   └── S3Config.java        # AWS S3 + presigner
+│   │       ├── cache/
+│   │       │   ├── CacheConfig.java     # Redis cache manager
+│   │       │   ├── Caches.java          # Cache registry + safety check
+│   │       │   ├── CacheSpec.java       # Type-safe binding
+│   │       │   └── CacheTtlProperties.java  # Per-cache TTL config
 │   │       ├── websocket/
 │   │       │   ├── AuthHandshakeInterceptor.java  # Auth at handshake
 │   │       │   └── WebSocketConfig.java           # Handler registration
@@ -278,11 +287,11 @@ public class AuthHandshakeInterceptor implements HandshakeInterceptor {
     private final ChatService chatService;
 
     public AuthHandshakeInterceptor(TokenService tokenService,
-                                    UserService userService,
-                                    ChatService chatService) {
-        this.chatService = chatService;
-        this.userService = userService;
+                                     UserService userService,
+                                     ChatService chatService) {
         this.tokenService = tokenService;
+        this.userService = userService;
+        this.chatService = chatService;
     }
 
     @Override
@@ -298,15 +307,16 @@ public class AuthHandshakeInterceptor implements HandshakeInterceptor {
                 .getQueryParams();
 
         String token = params.getFirst("token");
-        String roomId = params.getFirst("roomId");
+        String roomIdS = params.getFirst("roomId");
+
         if (token == null || roomId == null) {
             response.setStatusCode(HttpStatus.UNAUTHORIZED);
             return false;
         }
 
         try {
-
             Long userId = tokenService.verifyAndGetIdFromToken(token);
+            Long roomId = Long.valueOf(roomId);
 
             User user = userService.findUserById(userId);
             if (user == null) {
@@ -314,11 +324,7 @@ public class AuthHandshakeInterceptor implements HandshakeInterceptor {
                 return false;
             }
 
-
-            // Uses UUID public room ID instead of sequential DB ID
-            // to prevent enumeration attacks on the WebSocket endpoint
-            ChatRoom room = chatService.findRoomByPublicId(roomId);
-
+            ChatRoom room = chatService.findRoomById(roomId);
             if (room == null) {
                 response.setStatusCode(HttpStatus.NOT_FOUND);
                 return false;
@@ -329,9 +335,9 @@ public class AuthHandshakeInterceptor implements HandshakeInterceptor {
                 return false;
             }
 
+            // Store in session attributes for use by the WebSocket handler
             attributes.put("userId", userId);
-            attributes.put("roomId", room.getId());
-
+            attributes.put("roomId", roomId);
             return true;
 
         } catch (JWTVerificationException ex) {
@@ -344,14 +350,10 @@ public class AuthHandshakeInterceptor implements HandshakeInterceptor {
     }
 
     @Override
-    public void afterHandshake(
-            ServerHttpRequest request,
-            ServerHttpResponse response,
-            WebSocketHandler wsHandler,
-            Exception exception) {
-        // nothing to do
+    public void afterHandshake(ServerHttpRequest request, ServerHttpResponse response,
+                                WebSocketHandler wsHandler, Exception exception) {
+        // No post-handshake processing required
     }
-
 }
 ```
 
@@ -385,6 +387,193 @@ public class WebSocketConfig implements WebSocketConfigurer {
     @Bean
     public WebSocketHandler chatHandler() {
         return new ChatWebSocketHandler();
+    }
+}
+```
+
+---
+
+### Distributed Caching Layer (Redis)
+
+Production-grade caching infrastructure with **type-safe deserialisation**, **transaction-aware eviction**, and **versioned cache invalidation**. The design solves several real production problems most caching layers ignore: class-name drift on serialized values, race conditions between cache eviction and database commits, and the need to invalidate all caches without manual flushes.
+
+**Core design decisions:**
+
+1. **Type-safe deserialisation** — each cache name is bound to a concrete `JavaType` at startup via `CacheSpec`, eliminating fragile class-name-based deserialisation and `ClassCastException` surprises at runtime.
+
+2. **Transaction-aware eviction** — cache evictions register as transaction synchronizations and only fire after commit, preventing concurrent readers from repopulating the cache with stale data mid-transaction.
+
+3. **Versioned key prefixes** — every cache key includes a configurable version (`liftsync:v1:cacheName::key`). Bumping the version invalidates all caches instantly without manual flushes — useful after deployments with incompatible serialisation changes.
+
+4. **Per-cache TTL configuration** — different caches have different staleness tolerances. TTLs are externally configurable via properties, falling back to a default when not specified.
+
+5. **Startup-time safety check** — reflection verifies that every declared cache name constant has a registered `CacheSpec`. Misconfigurations fail fast at startup, not silently at runtime.
+
+```java
+// CacheSpec.java — type-safe binding between cache names and stored types
+public record CacheSpec<T>(String name, JavaType javaType) {
+
+    private static final TypeFactory TF = TypeFactory.defaultInstance();
+
+    public static <T> CacheSpec<T> of(String name, Class<T> type) {
+        return new CacheSpec<>(name, TF.constructType(type));
+    }
+
+    public static <E> CacheSpec<List<E>> ofList(String name, Class<E> elementType) {
+        return new CacheSpec<>(name, TF.constructParametricType(List.class, elementType));
+    }
+
+    public static <K, V> CacheSpec<Map<K, V>> ofMap(String name, Class<K> keyType, Class<V> valueType) {
+        return new CacheSpec<>(name, TF.constructParametricType(Map.class, keyType, valueType));
+    }
+}
+```
+
+```java
+// CacheConfig.java — Redis cache manager with per-cache serializers and TTLs
+@Configuration
+@EnableCaching
+@EnableConfigurationProperties(CacheTtlProperties.class)
+@ConditionalOnProperty(name = "app.cache.enabled", havingValue = "true")
+public class CacheConfig {
+
+    private final CacheTtlProperties cacheTtlProperties;
+    private final ObjectMapper cacheObjectMapper;
+    private final String keyVersion;
+
+    public CacheConfig(CacheTtlProperties cacheTtlProperties,
+                       @Value("${app.cache.key-version:v1}") String keyVersion) {
+        this.cacheTtlProperties = cacheTtlProperties;
+        this.keyVersion = keyVersion;
+        this.cacheObjectMapper = new ObjectMapper()
+                .registerModule(new JavaTimeModule())
+                .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
+                .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
+    }
+
+    @Bean
+    public RedisCacheManager cacheManager(RedisConnectionFactory factory) {
+        return RedisCacheManager.builder(factory)
+                .cacheDefaults(cacheConfiguration())
+                .withInitialCacheConfigurations(buildPerCacheConfigurations())
+                .build();
+    }
+
+    private Map<String, RedisCacheConfiguration> buildPerCacheConfigurations() {
+        Map<String, RedisCacheConfiguration> configs = new HashMap<>();
+        for (CacheSpec<?> spec : Caches.all()) {
+            Jackson2JsonRedisSerializer<?> serializer =
+                    new Jackson2JsonRedisSerializer<>(cacheObjectMapper, spec.javaType());
+            configs.put(spec.name(), baseConfiguration(resolveTtl(spec.name()), serializer));
+        }
+        return configs;
+    }
+
+    private RedisCacheConfiguration baseConfiguration(Duration ttl,
+                                                      Jackson2JsonRedisSerializer<?> valueSerializer) {
+        return RedisCacheConfiguration.defaultCacheConfig()
+                .disableCachingNullValues()
+                .entryTtl(ttl)
+                .computePrefixWith(cacheName -> "liftsync:" + keyVersion + ":" + cacheName + "::")
+                .serializeKeysWith(RedisSerializationContext.SerializationPair
+                        .fromSerializer(new StringRedisSerializer()))
+                .serializeValuesWith(RedisSerializationContext.SerializationPair
+                        .fromSerializer(valueSerializer));
+    }
+}
+```
+
+```java
+// CacheEvictor.java — transaction-aware eviction prevents stale repopulation
+@Component
+public class CacheEvictor {
+
+    private final CacheManager cacheManager;
+
+    public CacheEvictor(ObjectProvider<CacheManager> cacheManagerProvider) {
+        this.cacheManager = cacheManagerProvider.getIfAvailable();
+    }
+
+    /**
+     * Registers an eviction to run only after the current transaction commits.
+     * Falls back to immediate execution when no transaction is active.
+     *
+     * This prevents the classic race condition where a cache is evicted before
+     * the transaction commits, allowing concurrent readers to repopulate it
+     * with the pre-commit value before the new value is visible.
+     */
+    private void runAfterCommit(Runnable task) {
+        if (task == null) return;
+
+        if (TransactionSynchronizationManager.isActualTransactionActive()) {
+            TransactionSynchronizationManager.registerSynchronization(
+                new TransactionSynchronization() {
+                    @Override
+                    public void afterCommit() {
+                        task.run();
+                    }
+                });
+        } else {
+            task.run();
+        }
+    }
+
+    public void evictAthleteMetricsByAthleteAndCoachAfterCommit(Long athleteId, Long coachId) {
+        runAfterCommit(() -> evict(Caches.ATHLETE_METRICS,
+                CacheKeyUtils.athleteMetrics(athleteId, coachId)));
+    }
+
+    // Additional eviction methods omitted for brevity...
+}
+```
+
+```java
+// Caches.java — central registry with startup-time safety check
+public final class Caches {
+
+    public static final String USER_DTO_BY_PUBLIC_ID = "userDTOByPublicId";
+    public static final String ATHLETE_METRICS = "athleteMetrics";
+    public static final String BLOCK_LIBRARY = "blockLibrary";
+    // ... additional cache name constants
+
+    private static final Map<String, CacheSpec<?>> REGISTRY = new LinkedHashMap<>();
+
+    static {
+        register(CacheSpec.of(USER_DTO_BY_PUBLIC_ID, UserDTO.class));
+        register(CacheSpec.of(ATHLETE_METRICS, AthleteMetricsResp.class));
+        register(CacheSpec.ofList(BLOCK_LIBRARY, BlockTemplatePreviewDTO.class));
+        // ... additional registrations
+
+        verifyEveryNameHasASpec();
+    }
+
+    /**
+     * Reflectively asserts that every public static final String constant on this class
+     * has a corresponding entry in REGISTRY. Prevents silent drift where someone adds
+     * a name constant but forgets the register(...) call.
+     */
+    private static void verifyEveryNameHasASpec() {
+        List<String> missing = new ArrayList<>();
+
+        for (Field field : Caches.class.getDeclaredFields()) {
+            int mods = field.getModifiers();
+            if (!(Modifier.isPublic(mods) && Modifier.isStatic(mods) && Modifier.isFinal(mods))) continue;
+            if (field.getType() != String.class) continue;
+
+            try {
+                String value = (String) field.get(null);
+                if (!REGISTRY.containsKey(value)) {
+                    missing.add(field.getName() + " (\"" + value + "\")");
+                }
+            } catch (IllegalAccessException e) {
+                throw new IllegalStateException("Unable to read " + field.getName(), e);
+            }
+        }
+
+        if (!missing.isEmpty()) {
+            throw new IllegalStateException(
+                "Caches: the following name constants have no registered CacheSpec — " + missing);
+        }
     }
 }
 ```
