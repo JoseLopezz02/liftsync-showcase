@@ -30,7 +30,7 @@ This repository is a **public showcase** of the system architecture, CI/CD pipel
 ┌─────────────────────────────────────────────────────────┐
 │                    BACKEND LAYER                        │
 │                                                         │
-│              Java 17 + Spring Boot 3                    │
+│              Java 21 + Spring Boot 3                    │
 │                                                         │
 │   ┌──────────┐  ┌──────────┐  ┌──────────────────────┐  │
 │   │  Auth    │  │ Business │  │    i18n / Locale     │  │
@@ -56,7 +56,7 @@ This repository is a **public showcase** of the system architecture, CI/CD pipel
 
 | Layer | Technology |
 |---|---|
-| Backend | Java 17, Spring Boot 3, Spring Security |
+| Backend | Java 21, Spring Boot 3, Spring Security |
 | Auth | OAuth2 (Google + Microsoft), JWT |
 | Database | MySQL |
 | Caching | Redis (type-safe, transaction-aware, versioned) |
