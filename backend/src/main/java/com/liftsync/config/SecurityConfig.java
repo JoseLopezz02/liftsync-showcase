@@ -23,17 +23,34 @@ public class SecurityConfig {
     @Value("${env.frontend.allowed-origins}")
     private String allowedOrigins;
 
+    private final LiftSyncAuthenticationEntryPoint authenticationEntryPoint;
+
+    public SecurityConfig(LiftSyncAuthenticationEntryPoint authenticationEntryPoint) {
+        this.authenticationEntryPoint = authenticationEntryPoint;
+    }
+
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        http
+    public SecurityFilterChain securityFilterChain(HttpSecurity http,
+                                                   JwtAuthenticationFilter jwtAuthenticationFilter) throws Exception {
+
+        return http
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(AbstractHttpConfigurer::disable)
-                .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/dev/**").permitAll() // Dev tools (only available in dev profile)
-                        .anyRequest().permitAll()
-                );
+                .sessionManagement(session
+                        -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 
-        return http.build();
+                .authorizeHttpRequests(auth -> auth
+
+                        .requestMatchers(SecurityPaths.publicApiPaths()).permitAll()
+                        .requestMatchers(SecurityPaths.WS_PATTERN).permitAll()
+                        .requestMatchers(SecurityPaths.API_PATTERN).authenticated()
+                        .anyRequest().denyAll()
+
+                )
+                .exceptionHandling(ex ->
+                        ex.authenticationEntryPoint(authenticationEntryPoint))
+                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
+                .build();
     }
 
     @Bean
@@ -47,7 +64,7 @@ public class SecurityConfig {
         configuration.setAllowCredentials(true);  // Allow cookies to be sent!
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/api/**", configuration);
+        source.registerCorsConfiguration(SecurityPaths.API_PATTERN, configuration);
         return source;
     }
 }
