@@ -1,11 +1,10 @@
 package com.liftsync.cache;
 
+import com.liftsync.config.TransactionManager;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.support.TransactionSynchronization;
-import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import com.liftsync.config.cache.Caches;
 
@@ -17,9 +16,11 @@ public class CacheEvictor {
     private static final String HIGHEST_RATINGS_KEY = "highestRatings";
 
     private final CacheManager cacheManager;
+    private final TransactionManager transactionManager;
 
-    public CacheEvictor(ObjectProvider<CacheManager> cacheManagerProvider) {
+    public CacheEvictor(ObjectProvider<CacheManager> cacheManagerProvider, TransactionManager transactionManager) {
         this.cacheManager = cacheManagerProvider.getIfAvailable();
+        this.transactionManager = transactionManager;
     }
 
     public void clearCache(String cacheName) {
@@ -30,23 +31,6 @@ public class CacheEvictor {
         Cache cache = cacheManager.getCache(cacheName);
         if (cache != null) {
             cache.clear();
-        }
-    }
-
-    private void runAfterCommit(Runnable task) {
-        if (task == null) {
-            return;
-        }
-
-        if (TransactionSynchronizationManager.isActualTransactionActive()) {
-            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
-                @Override
-                public void afterCommit() {
-                    task.run();
-                }
-            });
-        } else {
-            task.run();
         }
     }
 
@@ -62,50 +46,50 @@ public class CacheEvictor {
     }
 
     public void evictQuestionnaireLibraryByCoachIdAfterCommit(Long coachId) {
-        runAfterCommit(() -> evictQuestionnaireLibraryByCoachId(coachId));
+        transactionManager.runAfterCommit(() -> evictQuestionnaireLibraryByCoachId(coachId));
     }
 
     public void evictBlockLibraryByCoachIdAfterCommit(Long coachId) {
-        runAfterCommit(() -> evictBlockLibraryByCoachId(coachId));
+        transactionManager.runAfterCommit(() -> evictBlockLibraryByCoachId(coachId));
     }
 
     public void evictCoachPersonalInfoAfterCommit() {
-        runAfterCommit(() -> {
+        transactionManager.runAfterCommit(() -> {
             evictCoachSpecializations();
             evictAllCoachesInfo();
         });
     }
 
     public void evictHighestWebRatingsAfterCommit() {
-        runAfterCommit(this::evictHighestWebRatings);
+        transactionManager.runAfterCommit(this::evictHighestWebRatings);
     }
 
     public void evictBlockModalPreviewByTemplateIdAfterCommit(Long templateId) {
-        runAfterCommit(() -> evictBlockModalPreviewByTemplateId(templateId));
+        transactionManager.runAfterCommit(() -> evictBlockModalPreviewByTemplateId(templateId));
     }
 
     public void evictAthleteMetricsByAthleteAndCoachAfterCommit(Long athleteId, Long coachId) {
-        runAfterCommit(() -> evictAthleteMetricsByAthleteAndCoach(athleteId, coachId));
+        transactionManager.runAfterCommit(() -> evictAthleteMetricsByAthleteAndCoach(athleteId, coachId));
     }
 
     public void evictCoachPublicIdByAthleteIdAfterCommit(Long athleteId) {
-        runAfterCommit(() -> evictCoachPublicIdByAthleteId(athleteId));
+        transactionManager.runAfterCommit(() -> evictCoachPublicIdByAthleteId(athleteId));
     }
 
     public void evictUserDtoByIdAfterCommit(Long userId) {
-        runAfterCommit(() -> evictUserDtoById(userId));
+        transactionManager.runAfterCommit(() -> evictUserDtoById(userId));
     }
 
     public void evictUserDtoByPublicIdAfterCommit(String publicId) {
-        runAfterCommit(() -> evictUserDtoByPublicId(publicId));
+        transactionManager.runAfterCommit(() -> evictUserDtoByPublicId(publicId));
     }
 
     public void evictAthletePersonalInfoByAthleteIdAfterCommit(Long athleteId) {
-        runAfterCommit(() -> evictAthletePersonalInfoByAthleteId(athleteId));
+        transactionManager.runAfterCommit(() -> evictAthletePersonalInfoByAthleteId(athleteId));
     }
 
 
-    // Direct evictions — run immediately, without transaction synchronization //
+    // Function that only evicted without checking if there is any commited transaction //
 
     public void evictUserDtoByPublicId(String publicId) {
         evict(Caches.USER_DTO_BY_PUBLIC_ID, publicId);

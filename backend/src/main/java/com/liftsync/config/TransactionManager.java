@@ -12,15 +12,21 @@ public class TransactionManager {
             return;
         }
 
-        if (TransactionSynchronizationManager.isActualTransactionActive()) {
-            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
-                @Override
-                public void afterCommit() {
-                    task.run();
-                }
-            });
+        if (TransactionSynchronizationManager.isActualTransactionActive() &&
+                TransactionSynchronizationManager.isSynchronizationActive()) {
+
+            TransactionSynchronizationManager.registerSynchronization(
+                    new TransactionSynchronization() {
+                        @Override
+                        public void afterCommit() {
+                            task.run();
+                        }
+                    });
         } else {
+
+            //run the job immediately if there is no active transaction or synchronization
             task.run();
+
         }
     }
 }
