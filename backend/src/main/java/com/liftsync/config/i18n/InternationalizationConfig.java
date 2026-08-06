@@ -1,13 +1,6 @@
-// Here we handle internationalization (i18n) in our application. 
-// We define a LocaleResolver bean that determines the user's locale based on the Accept-Language 
-// header in the HTTP request. We also specify a default locale (English) and a list of supported locales 
-// (English and Spanish). Additionally, we configure a MessageSource bean that loads message properties 
-// files (e.g., messages_en.properties, messages_es.properties) to provide localized messages for our application. 
-// This setup allows us to easily support multiple languages and provide a better user experience for users from different regions.
-package com.liftsync.config;
+package com.liftsync.config.i18n;
 
-public package com.liftsync.config;
-
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Locale;
 
@@ -25,7 +18,7 @@ public class InternationalizationConfig {
     public LocaleResolver localeResolver() {
         AcceptHeaderLocaleResolver resolver = new AcceptHeaderLocaleResolver();
         resolver.setDefaultLocale(Locale.ENGLISH);
-        resolver.setSupportedLocales(List.of(Locale.ENGLISH, new Locale("es")));
+        resolver.setSupportedLocales(List.of(Locale.ENGLISH,  Locale.of("es")));
         return resolver;
     }
 
@@ -33,10 +26,7 @@ public class InternationalizationConfig {
     public MessageSource messageSource() {
         ResourceBundleMessageSource source = new ResourceBundleMessageSource();
         source.setBasename("messages");
-        source.setDefaultEncoding("UTF-8");
+        source.setDefaultEncoding(StandardCharsets.UTF_8.name());
         return source;
     }
-}
- {
-    
 }

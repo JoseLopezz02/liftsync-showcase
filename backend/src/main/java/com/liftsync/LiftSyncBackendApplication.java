@@ -1,21 +1,20 @@
-// Here we define the main application class for the LiftSync backend. 
-// This class is responsible for bootstrapping the Spring Boot application and configuring the necessary interceptors 
-// for handling authentication, user ownership, coaching relationships, 
-// and locale changes.
 package com.liftsync;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.context.properties.ConfigurationPropertiesScan;
 import org.springframework.context.annotation.Bean;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 import org.springframework.web.servlet.i18n.LocaleChangeInterceptor;
 
 import com.liftsync.config.interceptor.CoachingRelationshipInterceptor;
+import com.liftsync.config.security.SecurityPaths;
 import com.liftsync.config.interceptor.TokenInterceptor;
 import com.liftsync.config.interceptor.UserOwnershipInterceptor;
 
 @SpringBootApplication
+@ConfigurationPropertiesScan
 public class LiftSyncBackendApplication implements WebMvcConfigurer {
 
     private final TokenInterceptor tokenInterceptor;
@@ -35,7 +34,7 @@ public class LiftSyncBackendApplication implements WebMvcConfigurer {
     @Bean
     public LocaleChangeInterceptor localeChangeInterceptor() {
         LocaleChangeInterceptor interceptor = new LocaleChangeInterceptor();
-        interceptor.setParamName("lang"); // ej: ?lang=es
+        interceptor.setParamName("lang"); // e.g. ?lang=es
         return interceptor;
     }
 
@@ -46,57 +45,17 @@ public class LiftSyncBackendApplication implements WebMvcConfigurer {
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
         registry.addInterceptor(tokenInterceptor)
-                .addPathPatterns("/api/**")
-                .excludePathPatterns(
-                        "/api/auth/google",
-                        "/api/auth/microsoft",
-                        "/api/auth/oauth2/redirect",
-                        "/api/auth/refresh",
-                        "/api/login",
-                        "/api/register",
-                        "/api/verifyUser",
-                        "/api/sendRegisterToken",
-                        "/api/resendCode",
-                        "/api/dev/**",
-                        "/api/getRatings",
-                        "/api/user/forgotPassword",
-                        "/api/user/resetPassword");
+                .addPathPatterns(SecurityPaths.API_PATTERN)
+                .excludePathPatterns(SecurityPaths.publicApiPaths());
 
         registry.addInterceptor(userOwnershipInterceptor)
-                .addPathPatterns("/api/**")
-                .excludePathPatterns(
-                        "/api/auth/google",
-                        "/api/auth/microsoft",
-                        "/api/auth/oauth2/redirect",
-                        "/api/auth/refresh",
-                        "/api/login",
-                        "/api/sendRegisterToken",
-                        "/api/register",
-                        "/api/dev/**",
-                        "/api/verifyUser",
-                        "/api/resendCode",
-                        "/api/getRatings",
-                        "/api/user/forgotPassword",
-                        "/api/user/resetPassword");
+                .addPathPatterns(SecurityPaths.API_PATTERN)
+                .excludePathPatterns(SecurityPaths.publicApiPaths());
 
         registry.addInterceptor(localeChangeInterceptor());
 
-        registry.addInterceptor(coachingRelationshipInterceptor)
-                .addPathPatterns("/api/coaches/**")
-                .excludePathPatterns(
-                        "/api/auth/google",
-                        "/api/auth/microsoft",
-                        "/api/auth/oauth2/redirect",
-                        "/api/login",
-                        "/api/register",
-                        "/api/verifyUser",
-                        "/api/resendCode",
-                        "/api/sendRegisterToken",
-                        "/api/getRatings",
-                        "/api/coaches/*/acceptAthlete/*",
-                        "/api/coaches/*/deleteAthlete/*",
-                        "/api/user/forgotPassword",
-                        "/api/user/resetPassword");
+        // Handled by @RequireCoachingRelationship annotation
+        registry.addInterceptor(coachingRelationshipInterceptor);
 
     }
 }

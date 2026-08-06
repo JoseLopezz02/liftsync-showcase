@@ -1,6 +1,3 @@
-//Here we are configuring the S3 client and presigner beans for our application. 
-// We are using the AWS SDK for Java v2, which provides a more modern and efficient way to interact with AWS services(build for Java 8 and above and with immutable objects). 
-// The S3Client bean will be used for regular S3 operations, while the S3Presigner bean will be used to generate pre-signed URLs for secure access to S3 objects. We are also using Spring's @Value annotation to inject the AWS credentials and region from our application properties.
 package com.liftsync.config.amazon;
 
 import org.springframework.beans.factory.annotation.Value;

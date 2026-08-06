@@ -34,18 +34,18 @@ public class CacheEvictor {
     }
 
     private void runAfterCommit(Runnable task) {
-        if(task == null){
+        if (task == null) {
             return;
         }
 
-        if(TransactionSynchronizationManager.isActualTransactionActive()){
+        if (TransactionSynchronizationManager.isActualTransactionActive()) {
             TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
                 @Override
                 public void afterCommit() {
                     task.run();
                 }
             });
-        }else {
+        } else {
             task.run();
         }
     }
@@ -61,11 +61,11 @@ public class CacheEvictor {
         }
     }
 
-    public void evictQuestionnaireLibraryByCoachIdAfterCommit(Long coachId){
+    public void evictQuestionnaireLibraryByCoachIdAfterCommit(Long coachId) {
         runAfterCommit(() -> evictQuestionnaireLibraryByCoachId(coachId));
     }
 
-    public void evictBlockLibraryByCoachIdAfterCommit(Long coachId){
+    public void evictBlockLibraryByCoachIdAfterCommit(Long coachId) {
         runAfterCommit(() -> evictBlockLibraryByCoachId(coachId));
     }
 
@@ -79,7 +79,7 @@ public class CacheEvictor {
     public void evictHighestWebRatingsAfterCommit() {
         runAfterCommit(this::evictHighestWebRatings);
     }
-    
+
     public void evictBlockModalPreviewByTemplateIdAfterCommit(Long templateId) {
         runAfterCommit(() -> evictBlockModalPreviewByTemplateId(templateId));
     }
@@ -88,11 +88,31 @@ public class CacheEvictor {
         runAfterCommit(() -> evictAthleteMetricsByAthleteAndCoach(athleteId, coachId));
     }
 
+    public void evictCoachPublicIdByAthleteIdAfterCommit(Long athleteId) {
+        runAfterCommit(() -> evictCoachPublicIdByAthleteId(athleteId));
+    }
 
-    // Function that only evicted without checking if there is any commited transaction //
+    public void evictUserDtoByIdAfterCommit(Long userId) {
+        runAfterCommit(() -> evictUserDtoById(userId));
+    }
+
+    public void evictUserDtoByPublicIdAfterCommit(String publicId) {
+        runAfterCommit(() -> evictUserDtoByPublicId(publicId));
+    }
+
+    public void evictAthletePersonalInfoByAthleteIdAfterCommit(Long athleteId) {
+        runAfterCommit(() -> evictAthletePersonalInfoByAthleteId(athleteId));
+    }
+
+
+    // Direct evictions — run immediately, without transaction synchronization //
 
     public void evictUserDtoByPublicId(String publicId) {
         evict(Caches.USER_DTO_BY_PUBLIC_ID, publicId);
+    }
+
+    public void evictUserDtoById(Long userId) {
+        evict(Caches.USER_DTO_BY_ID, userId);
     }
 
     public void evictAthletePersonalInfoByAthleteId(Long athleteId) {
@@ -118,13 +138,17 @@ public class CacheEvictor {
     public void evictHighestWebRatings() {
         evict(Caches.HIGHEST_WEB_RATINGS, HIGHEST_RATINGS_KEY);
     }
-    
+
     public void evictBlockModalPreviewByTemplateId(Long templateId) {
         evict(Caches.BLOCK_MODAL_PREVIEW, templateId);
     }
 
     public void evictAthleteMetricsByAthleteAndCoach(Long athleteId, Long coachId) {
         evict(Caches.ATHLETE_METRICS, CacheKeyUtils.athleteMetrics(athleteId, coachId));
+    }
+
+    public void evictCoachPublicIdByAthleteId(Long athleteId) {
+        evict(Caches.COACH_PUBLIC_ID_BY_ATHLETE_ID, athleteId);
     }
 
 }

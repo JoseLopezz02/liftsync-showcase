@@ -1,11 +1,7 @@
-// This class is responsible for configuring the WebSocket endpoints for the LiftSync application.
-// It defines the WebSocket handler for the chat service and registers the necessary interceptors for authentication and CORS handling.
 package com.liftsync.config.websocket;
 
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.web.socket.WebSocketHandler;
 import org.springframework.web.socket.config.annotation.*;
 
 import java.util.Arrays;
@@ -18,9 +14,11 @@ public class WebSocketConfig implements WebSocketConfigurer {
     private String allowedOrigins;
 
     private final AuthHandshakeInterceptor authInterceptor;
+    private final ChatWebSocketHandler chatHandler;
 
-    public WebSocketConfig(AuthHandshakeInterceptor authInterceptor) {
+    public WebSocketConfig(AuthHandshakeInterceptor authInterceptor, ChatWebSocketHandler chatHandler) {
         this.authInterceptor = authInterceptor;
+        this.chatHandler = chatHandler;
     }
 
     @Override
@@ -30,17 +28,9 @@ public class WebSocketConfig implements WebSocketConfigurer {
                 .toArray(String[]::new);
 
         registry
-                .addHandler(chatHandler(), "/api/ws/chat")
+                .addHandler(chatHandler, "/api/ws/chat")
                 .addInterceptors(authInterceptor)
                 .setAllowedOrigins(origins);
     }
 
-    @Bean
-    public WebSocketHandler chatHandler() {
-        return new ChatWebSocketHandler();
-    }
 }
-
-
-
-

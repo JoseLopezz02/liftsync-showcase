@@ -17,15 +17,19 @@ import com.liftsync.dto.response.metrics.AthleteMetricsResp;
 import com.liftsync.dto.response.questionnaires.QuestionnaireTemplateDTO;
 import com.liftsync.dto.response.user.UserDTO;
 import com.liftsync.dto.response.webrating.WebRatingDTO;
-import com.liftsync.model.ExerciseCatalog;
-import com.liftsync.model.FoodItem;
+import com.liftsync.model.block.ExerciseCatalog;
+import com.liftsync.model.nutrition.FoodItem;
 
 
 public final class Caches {
 
     public static final String USER_DTO_BY_PUBLIC_ID = "userDTOByPublicId";
+    public static final String USER_DTO_BY_ID = "userDTOById";
     public static final String ATHLETE_PERSONAL_INFO_DTO = "athletePersonalInfoDTO";
     public static final String ATHLETE_METRICS = "athleteMetrics";
+    /*
+     + Block Template
+     */
     public static final String BLOCK_MODAL_PREVIEW = "blockModalPreview";
     public static final String ALL_COACHES_INFO = "allCoachesInfo";
     public static final String SEARCH_PENDING_COACHES = "searchPendingCoaches";
@@ -36,7 +40,6 @@ public final class Caches {
     public static final String ALL_EXERCISES = "allExercises";
     public static final String ALL_FOOD_ITEMS = "allFoodItems";
     public static final String FOOD_ITEM_BY_NAME = "foodItemByName";
-    public static final String QUESTIONNAIRE_LIBRARY_DEFAULTS = "questionnaireLibraryDefaults";
     public static final String QUESTIONNAIRE_LIBRARY_COACH = "questionnaireLibraryCoach";
     public static final String BLOCK_LIBRARY = "blockLibrary";
 
@@ -46,13 +49,13 @@ public final class Caches {
     static {
         // DTO-backed caches
         register(CacheSpec.of(USER_DTO_BY_PUBLIC_ID, UserDTO.class));
+        register(CacheSpec.of(USER_DTO_BY_ID, UserDTO.class));
         register(CacheSpec.of(ATHLETE_PERSONAL_INFO_DTO, AthletePersonalInfoDTO.class));
         register(CacheSpec.of(ATHLETE_METRICS, AthleteMetricsResp.class));
         register(CacheSpec.of(BLOCK_MODAL_PREVIEW, ModalPreviewBlockDTO.class));
         register(CacheSpec.ofList(ALL_COACHES_INFO, CoachProfileDTO.class));
         register(CacheSpec.ofList(SEARCH_PENDING_COACHES, UserDTO.class));
         register(CacheSpec.ofList(HIGHEST_WEB_RATINGS, WebRatingDTO.class));
-        register(CacheSpec.ofList(QUESTIONNAIRE_LIBRARY_DEFAULTS, QuestionnaireTemplateDTO.class));
         register(CacheSpec.ofList(QUESTIONNAIRE_LIBRARY_COACH, QuestionnaireTemplateDTO.class));
         register(CacheSpec.ofList(BLOCK_LIBRARY, BlockTemplatePreviewDTO.class));
         // Scalar / enum-backed

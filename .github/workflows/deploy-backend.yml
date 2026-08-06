@@ -16,6 +16,7 @@ jobs:
       with:
         java-version: '21'
         distribution: 'temurin'
+        cache: 'maven'
 
     - name: Build JAR
       working-directory: ./Liftsync-backend
@@ -40,21 +41,21 @@ jobs:
           deploy/docker-compose.yml \
           ${{ secrets.VPS_USER }}@${{ secrets.VPS_IP }}:/var/www/liftsync/docker-compose.yml
 
-    - name: Upload .env.conf to VPS
-      uses: appleboy/ssh-action@v0.1.6
+    - name: Inject .env from GitHub Secrets
+      uses: appleboy/ssh-action@v1.2.0
       with:
         host: ${{ secrets.VPS_IP }}
         username: ${{ secrets.VPS_USER }}
         key: ${{ secrets.VPS_SSH_KEY }}
         script: |
 
-          echo "SPRING_DATASOURCE_URL=jdbc:mysql://db:3306/liftsync_prod?allowPublicKeyRetrieval=true&useSSL=false" > /var/www/liftsync/.env
-          echo "SPRING_DATASOURCE_USERNAME=ls_prod" >> /var/www/liftsync/.env
+          echo "SPRING_DATASOURCE_URL=jdbc:mysql://db:3306/${{ secrets.DB_NAME }}" > /var/www/liftsync/.env
+          echo "SPRING_DATASOURCE_USERNAME=${{ secrets.DB_USER }}" >> /var/www/liftsync/.env
           echo "SPRING_DATASOURCE_PASSWORD=${{ secrets.DB_PASSWORD }}" >> /var/www/liftsync/.env
           echo "MYSQL_ROOT_PASSWORD=${{ secrets.DB_PASSWORD_ROOT }}" >> /var/www/liftsync/.env
 
-          echo "SPRING_MAIL_USERNAME=noreply@liftsync.es" >> /var/www/liftsync/.env
-          echo "SPRING_MAIL_PASSWORD=${{ secrets.IONOS_NOREPLAY_EMAIL_PASSWORD }}" >> /var/www/liftsync/.env
+          echo "SPRING_MAIL_USERNAME=${{ secrets.MAIL_USERNAME }}" >> /var/www/liftsync/.env
+          echo "SPRING_MAIL_PASSWORD=${{ secrets.MAIL_PASSWORD }}" >> /var/www/liftsync/.env
           echo "TOKEN_SECRET=${{ secrets.TOKEN_SECRET }}" >> /var/www/liftsync/.env
 
           echo "GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }}" >> /var/www/liftsync/.env
@@ -67,6 +68,11 @@ jobs:
           echo "AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}" >> /var/www/liftsync/.env
           echo "AWS_REGION=${{ secrets.AWS_REGION }}" >> /var/www/liftsync/.env
           echo "AWS_S3_BUCKET=${{ secrets.AWS_S3_BUCKET }}" >> /var/www/liftsync/.env
+
+          echo "TZ=${{ secrets.TZ }}" >> /var/www/liftsync/.env
+
+          echo "SPRING_RABBITMQ_USERNAME=${{ secrets.SPRING_RABBITMQ_USERNAME }}" >> /var/www/liftsync/.env
+          echo "SPRING_RABBITMQ_PASSWORD=${{ secrets.SPRING_RABBITMQ_PASSWORD }}" >> /var/www/liftsync/.env
 
     - name: Restart backend using Docker Compose
       uses: appleboy/ssh-action@v1.2.0

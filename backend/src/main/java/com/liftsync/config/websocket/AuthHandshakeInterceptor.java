@@ -1,20 +1,16 @@
-// This class is responsible for intercepting WebSocket handshake requests 
-// to ensure that only authenticated users can establish a connection to the chat service.
-// I decide to get the token and roomId from the query parameters of the WebSocket URL instead of the headers because 
-// WebSocket handshake requests do not support custom headers in the same way as regular HTTP requests.,
-// which allows the client to pass the necessary information for authentication and room access control.
 package com.liftsync.config.websocket;
 
 import com.auth0.jwt.exceptions.JWTVerificationException;
-import com.liftsync.model.ChatRoom;
-import com.liftsync.model.User;
-import com.liftsync.service.ChatService;
-import com.liftsync.service.TokenService;
-import com.liftsync.service.UserService;
+import com.liftsync.model.chat.ChatRoom;
+import com.liftsync.model.user.User;
+import com.liftsync.service.chat.ChatService;
+import com.liftsync.service.auth.TokenService;
+import com.liftsync.service.user.UserService;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.server.ServerHttpRequest;
 import org.springframework.http.server.ServerHttpResponse;
+import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Component;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.socket.WebSocketHandler;
@@ -42,9 +38,9 @@ public class AuthHandshakeInterceptor implements HandshakeInterceptor {
     @Override
     public boolean beforeHandshake(
             ServerHttpRequest request,
-            ServerHttpResponse response,
-            WebSocketHandler wsHandler,
-            Map<String, Object> attributes) throws HandshakeFailureException {
+            @NonNull ServerHttpResponse response,
+            @NonNull WebSocketHandler wsHandler,
+            @NonNull Map<String, Object> attributes) throws HandshakeFailureException {
 
         MultiValueMap<String, String> params = UriComponentsBuilder
                 .fromUri(request.getURI())
