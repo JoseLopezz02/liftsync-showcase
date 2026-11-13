@@ -41,7 +41,7 @@ This is not a weekend project. LiftSync has been in continuous development for w
                      └─────────────────┬─────────────────┘
                                        │  HTTPS (REST) · WSS (chat)
                      ┌─────────────────▼─────────────────────────────┐
-                     │          BACKEND — Java 21 · Spring Boot 3    │
+                     │      BACKEND — Java 21 · Spring Boot 4.1      │
                      │                                               │
                      │  ┌─────────────────────────────────────────┐  │
                      │  │            SECURITY PIPELINE            │  │
@@ -76,7 +76,7 @@ This is not a weekend project. LiftSync has been in continuous development for w
 
 | Layer | Technology |
 |---|---|
-| Backend | Java 21, Spring Boot 3.4, Spring Security, Spring Data JPA |
+| Backend | Java 21, Spring Boot 4.1, Spring Security, Spring Data JPA |
 | Auth | OAuth2 (Google + Microsoft), JWT (stateless), refresh tokens |
 | Database | MySQL + Flyway versioned migrations |
 | Caching | Redis (type-safe, transaction-aware, versioned keys) |
@@ -513,8 +513,6 @@ liftsync-showcase/
 │
 └── README.md
 ```
-
-> The business layer — 19 services, 27 repositories, ~30 entities, 130+ endpoints — is private. What you see here is the engineering that carries it.
 
 ---
 
